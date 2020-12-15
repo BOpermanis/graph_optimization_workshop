@@ -48,7 +48,10 @@ class GameWalkPuzzle(SearchProblem):
 
     def actions(self, state):
         actions = []
-        # TODO atgriezt iespejamos gajienus
+        for action in list(COSTS.keys()):
+            newx, newy = self.result(state, action)
+            if self.board[newy][newx] != "#":
+                actions.append(action)
         return actions
 
     def result(self, state, action):
@@ -73,8 +76,9 @@ class GameWalkPuzzle(SearchProblem):
         return COSTS[action]
 
     def heuristic(self, state):
-        # TODO implementeet heuristiku
-        return 0.0
+        x, y = state
+        gx, gy = self.goal
+        return math.sqrt((x - gx) ** 2 + (y - gy) ** 2)
 
 
 def print_map(MAP, path, problem):

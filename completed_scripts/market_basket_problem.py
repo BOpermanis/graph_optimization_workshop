@@ -1,7 +1,15 @@
 import numpy as np
-from simpleai.search import SearchProblem
+import random
+from simpleai.search import SearchProblem, astar
+from simpleai.search.local import hill_climbing
 from collections import defaultdict
+from itertools import chain
 from pprint import pprint
+
+from simpleai.search.utils import BoundedPriorityQueue, InverseTransformSampler
+from simpleai.search.models import SearchNodeValueOrdered
+from simpleai.search.local import _create_genetic_expander
+
 
 from itertools import combinations
 import pickle
@@ -34,32 +42,46 @@ class MarketBasketProblem(SearchProblem):
         self.initial_state = self.generate_random_state()
 
     def actions(self, state):
-        # TODO
         switches = []
+        for item0 in state:
+            for item in self.node2nodes[item0]:
+                if state.issubset(self.node2nodes[item]):
+                    switches.append((item0, item))
         return switches
 
     def result(self, state, action):
-        # TODO
+        state = HashableSet(state)
+        item_old, item_new = action
+        state.remove(item_old)
+        state.add(item_new)
         return state
 
     def value(self, state):
         s = 0.0
-        # TODO
+        for item1, item2 in combinations(state, 2):
+            s += self.weights[key(item1, item2)]
         return s
 
     def heuristic(self, state):
-        # man truukst izteeles :D
         return self.value(state)
 
     def generate_random_state(self):
 
-        clique = HashableSet()
-        # TODO
+        item0 = random.choice([*self.nodes])
+        clique = HashableSet([item0])
+        # clique = {item0}
+        neighbourhood = self.node2nodes[item0].copy()
+
+        for _ in range(self.k-1):
+            if len(neighbourhood) == 0:
+                break
+            item = random.choice([*neighbourhood])
+            clique.add(item)
+            neighbourhood.intersection_update(self.node2nodes[item])
 
         return clique
 
     def is_goal(self, state):
-        # prieksh salidzinashanas ar eksakto metodi
         return state == self.is_goal_state or self.is_goal_value <= self.value(state)
 
 
