@@ -20,9 +20,6 @@ MAP = """
 """
 MAP = [list(x) for x in MAP.split("\n") if x]
 
-print([len(_) for _ in MAP])
-exit()
-
 COSTS = {
     "up": 1.0,
     "down": 1.0,
@@ -97,21 +94,9 @@ def print_map(MAP, path, problem):
                 print(MAP[y][x], end='')
         print()
 
-def main_simple():
-    problem = GameWalkPuzzle(MAP)
-    result = astar(problem, graph_search=True)
-    path = [x[1] for x in result.path()]
-    print_map(MAP, path, problem)
-
-
-def main_hard():
-
-
-
-    problem = GameWalkPuzzle(MAP)
-    result = astar(problem, graph_search=True)
-    path = [x[1] for x in result.path()]
-    print_map(MAP, path, problem)
 
 if __name__ == "__main__":
-    main_simple()
+    problem = GameWalkPuzzle(MAP)
+    result = astar(problem, graph_search=True)
+    path = [x[1] for x in result.path()]
+    print_map(MAP, path, problem)

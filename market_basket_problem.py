@@ -13,21 +13,16 @@ from simpleai.search.local import _create_genetic_expander
 
 from itertools import combinations
 import pickle
-from utils import key
+from utils import key, check_if_clique, HashableSet
 import math
 import random
 
 
-def check_if_clique(state, node2nodes):
-    for n1, n2 in combinations(state, 2):
-        if n1 not in node2nodes[n2]:
-            return False
-    return True
+class MarketBasketProblem(SearchProblem):
 
-class MWC(SearchProblem):
-
-    def initialize_graph(self, weights, k):
+    def initialize_graph(self, weights, k, is_goal_solution=None):
         self.k = k
+
         self.node2nodes = defaultdict(set)
         self.weights = weights
 
@@ -39,6 +34,10 @@ class MWC(SearchProblem):
             i, j = edge.split("||")
             self.node2nodes[i].add(j)
             self.node2nodes[j].add(i)
+
+        if is_goal_solution is not None:
+            self.is_goal_state = is_goal_solution
+            self.is_goal_value = self.value(is_goal_solution)
 
         self.initial_state = self.generate_random_state()
 
@@ -82,11 +81,18 @@ class MWC(SearchProblem):
         return best_N_minus, best_val
 
     def actions(self, state):
-
-        return self.nodes - s_not
+        switches = []
+        for item0 in state:
+            for item in self.node2nodes[item0]:
+                if state.issubset(self.node2nodes[item]):
+                    switches.append((item0, item))
+        return switches
 
     def result(self, state, action):
-        state.add(action)
+        state = HashableSet(state)
+        item_old, item_new = action
+        state.remove(item_old)
+        state.add(item_new)
         return state
 
     def value(self, state):
@@ -95,42 +101,44 @@ class MWC(SearchProblem):
             s += self.weights[key(item1, item2)]
         return s
 
+    def heuristic(self, state):
+        return self.value(state)
+
     def generate_random_state(self):
 
         item0 = random.choice([*self.nodes])
-        clique = {item0}
+        clique = HashableSet([item0])
+        # clique = {item0}
         neighbourhood = self.node2nodes[item0].copy()
 
         for _ in range(self.k-1):
+            if len(neighbourhood) == 0:
+                break
             item = random.choice([*neighbourhood])
             clique.add(item)
             neighbourhood.intersection_update(self.node2nodes[item])
 
         return clique
 
+    def is_goal(self, state):
+        return state == self.is_goal_state or self.is_goal_value <= self.value(state)
 
-def tabu_search(problem, n_iter=100):
-    basket = problem.generate_random_state()
-    val_best = problem.value(basket)
-    basket_best = basket.copy()
 
-    list_tabu = [basket]
-
-    # for _ in range(n_iter):
-    #     best_N_plus, val = problem.get_best_N_plus(basket)
-    #     if val > val_best:
-    #         basket =
-
-if __name__ == "__main__":
-    from simpleai.search.local import hill_climbing
+def checking_problem():
     with open("similarities.pickle", "rb") as conn:
         weights = pickle.load(conn)
 
-    problem = MWC()
-    problem.initialize_graph(weights, 5)
+    problem = MarketBasketProblem()
+    problem.initialize_graph(weights, 10)
 
-    # result = hill_climbing(problem, 10)
-    result = tabu_search(problem, 100)
-    print(result)
+    state = problem.generate_random_state()
+    state.__hash__()
+    assert check_if_clique(state, problem.node2nodes)
+    actions = problem.actions(state)
+    for action in actions:
+        state1 = problem.result(state, action)
+        state1.__hash__()
+        assert check_if_clique(state1, problem.node2nodes)
 
-
+if __name__ == "__main__":
+    checking_problem()

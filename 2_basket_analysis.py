@@ -22,10 +22,6 @@ for i1, (item1, clients1) in enumerate(item2clients.items()):
 
             if union > 0 and intersection > 0:
                 weights[key(item1, item2)] = intersection / union
-            # else:
-            #     weights[key(item1, item2)] = 0.0
-
-print(len(weights))
 
 with open("similarities.pickle", "wb") as conn:
     pickle.dump(weights, conn)
